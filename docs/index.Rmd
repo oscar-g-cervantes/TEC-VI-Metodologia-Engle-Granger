@@ -1,0 +1,80 @@
+---
+title: "Metodología de Engle-Granger"
+author: "Oscar García Cervantes - Taller de economía cuantitativa VI"
+date: "`r format(Sys.time(), '%A %d de %B, %Y')`"
+output:
+     html_document:
+           toc: true
+           toc_float:
+                   collapsed: false
+                   smooth_scroll: false
+           toc_depth: 3       
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.align = 'center', echo = TRUE)
+```
+
+# 1. Paqueterias
+
+```{r, warning = FALSE, message = FALSE}
+library(tseries)
+library(readxl)
+library(tidyverse)
+library(ggfortify)
+```
+
+# 2. Datos
+
+Para esta sesión utilizaremos las series del Producto Interno Bruto (PIB) total, y el PIB manufacturero publicadas por el Instituto Nacional de Estadística y Geografía (INEGI).
+
+```{r}
+Base <- read_excel("Base.xls")
+str(Base)
+```
+
+Como primer paso le damos a las series formato de serie de tiempo.
+
+```{r}
+PIB <- ts(Base$`PIB total (millones de pesos a precios de 2013)`, start = c(1993, 1), frequency = 4)
+PIBMan <- ts(Base$`PIB manufacturero`, start = c(1993, 1), frequency = 4)
+PIB_No_Man <- PIB - PIBMan
+```
+
+# 3. Visualización de los datos
+
+```{r}
+ggplot2::autoplot(PIB, ts.colour = "cyan4") +
+     labs(title = "Producto Interno Bruto total 1993-2022",
+          subtitle = "precios constantes de 2013",
+          x = "Fecha",
+          y = "Millones de pesos",
+          caption = "Fuente: Elaboración propia con datos del BIE INEGI") +
+     theme_gray(base_family = "serif") + 
+     scale_x_date(date_breaks = "2 year", date_labels = "%Y")
+
+ggplot2::autoplot(PIBMan, ts.colour = "darkblue") +
+     labs(title = "Producto Interno Bruto manufacturero 1993-2022",
+          subtitle = "precios constantes de 2013",
+          x = "Fecha",
+          y = "Millones de pesos",
+          caption = "Fuente: Elaboración propia con datos del BIE INEGI") +
+     theme_gray(base_family = "serif") + 
+     scale_x_date(date_breaks = "2 year", date_labels = "%Y")
+
+ggplot2::autoplot(PIB_No_Man, ts.colour = "darkred") +
+     labs(title = "Producto Interno Bruto no manufacturero 1993-2022",
+          subtitle = "precios constantes de 2013",
+          x = "Fecha",
+          y = "Millones de pesos",
+          caption = "Fuente: Elaboración propia con datos del BIE INEGI") +
+     theme_gray(base_family = "serif") + 
+     scale_x_date(date_breaks = "2 year", date_labels = "%Y")
+```
+
+# 4. Modelo económico
+
