@@ -315,7 +315,7 @@ lPIB_No_Man &lt;- log(PIB_No_Man)</code></pre>
 <div id="modelo-econométrico" class="section level1">
 <h1>4. Modelo econométrico</h1>
 <p>El modelo a estimar es la primera Ley de Kaldor la cual indica que el sector manufacturero es el motor de la economía. <span class="math display">\[ 
-lPIB\_No\_Man = \beta_0+\beta_1lPIBMan+\epsilon_i 
+PIB\_No\_Man = \beta_0+\beta_1PIBMan+\epsilon_i 
 \]</span></p>
 <p>El primer paso es realizar las pruebas de raices unitarias a las series.</p>
 <pre class="r"><code>aTSA::adf.test(lPIB)</code></pre>
@@ -535,30 +535,33 @@ aTSA::adf.test(errores_m1)</code></pre>
 ## ---- 
 ## Note: in fact, p.value = 0.01 means p.value &lt;= 0.01</code></pre>
 <p>Obtenemos que el coeficiente de la variable explicativa es significativo y que está acorde a la teoría económica. Además, los residuales son I(0) por lo que podemos indicar que existe cointegración entre las dos variables, existe relación de largo plazo.</p>
-<p>Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error.</p>
-<pre class="r"><code>lag_errores_m1 &lt;- lag(errores_m1)
-mce_1 &lt;- lm(d1_lPIB_NMan ~ d1_lPIBMan + lag_errores_m1)
+<p>Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error. Se realiza sobre las diferencias de las series y se añaden los residuales de la regresión anterior rezagados.</p>
+<pre class="r"><code>lag_errores_m1 &lt;- lag(errores_m1, n = 4L)
+lag_errores_m1 &lt;- na.omit(lag_errores_m1)
+d2_lPIBMan &lt;- diff(lPIBMan, lag = 4, differences = 2)
+d2_lPIB_NMan &lt;- diff(lPIB_No_Man, lag = 4, differences = 2)
+mce_1 &lt;- lm(d2_lPIB_NMan ~ d2_lPIBMan + lag_errores_m1, na.action = &quot;na.omit&quot;)
 summary(mce_1)</code></pre>
 <pre><code>## 
 ## Call:
-## lm(formula = d1_lPIB_NMan ~ d1_lPIBMan + lag_errores_m1)
+## lm(formula = d2_lPIB_NMan ~ d2_lPIBMan + lag_errores_m1, na.action = &quot;na.omit&quot;)
 ## 
 ## Residuals:
 ##       Min        1Q    Median        3Q       Max 
-## -0.069115 -0.005199 -0.000254  0.006925  0.043063 
+## -0.064911 -0.005396  0.003563  0.010743  0.026635 
 ## 
 ## Coefficients:
-##                Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)    0.008735   0.001335   6.546 2.00e-09 ***
-## d1_lPIBMan     0.556307   0.019828  28.056  &lt; 2e-16 ***
-## lag_errores_m1 0.649825   0.071294   9.115 4.46e-15 ***
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)    -0.0007458  0.0017034  -0.438    0.662    
+## d2_lPIBMan      0.5300708  0.0175177  30.259   &lt;2e-16 ***
+## lag_errores_m1 -1.0466526  0.0961044 -10.891   &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.0135 on 109 degrees of freedom
-##   (1 observation deleted due to missingness)
-## Multiple R-squared:  0.8868, Adjusted R-squared:  0.8847 
-## F-statistic: 426.9 on 2 and 109 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 0.01777 on 106 degrees of freedom
+## Multiple R-squared:  0.9168, Adjusted R-squared:  0.9152 
+## F-statistic: 583.8 on 2 and 106 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo.</p>
 </div>
 
 

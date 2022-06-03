@@ -84,7 +84,7 @@ ggplot2::autoplot(PIB_No_Man, ts.colour = "darkred") +
 
 El modelo a estimar es la primera Ley de Kaldor la cual indica que el sector manufacturero es el motor de la economía.
 $$ 
-lPIB\_No\_Man = \beta_0+\beta_1lPIBMan+\epsilon_i 
+PIB\_No\_Man = \beta_0+\beta_1PIBMan+\epsilon_i 
 $$
 
 El primer paso es realizar las pruebas de raices unitarias a las series.
@@ -130,4 +130,5 @@ summary(mce_1)
 ```
 
 Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo.
+
 
