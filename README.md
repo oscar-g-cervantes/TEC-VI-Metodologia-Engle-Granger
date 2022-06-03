@@ -1,0 +1,1 @@
+# TEC-VI-Metodologia-Engle-Granger
