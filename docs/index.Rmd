@@ -26,6 +26,7 @@ library(tseries)
 library(readxl)
 library(tidyverse)
 library(ggfortify)
+library(aTSA)
 ```
 
 # 2. Datos
@@ -37,12 +38,15 @@ Base <- read_excel("Base.xls")
 str(Base)
 ```
 
-Como primer paso le damos a las series formato de serie de tiempo.
+Le damos a las series formato de serie de tiempo, creamos la variable PIB no manufacturero y obtenemos los logaritmos de las series.
 
 ```{r}
 PIB <- ts(Base$`PIB total (millones de pesos a precios de 2013)`, start = c(1993, 1), frequency = 4)
 PIBMan <- ts(Base$`PIB manufacturero`, start = c(1993, 1), frequency = 4)
 PIB_No_Man <- PIB - PIBMan
+lPIB <- log(PIB)
+lPIBMan <- log(PIBMan)
+lPIB_No_Man <- log(PIB_No_Man)
 ```
 
 # 3. Visualización de los datos
@@ -76,5 +80,54 @@ ggplot2::autoplot(PIB_No_Man, ts.colour = "darkred") +
      scale_x_date(date_breaks = "2 year", date_labels = "%Y")
 ```
 
-# 4. Modelo económico
+# 4. Modelo econométrico
+
+El modelo a estimar es la primera Ley de Kaldor la cual indica que el sector manufacturero es el motor de la economía.
+$$ 
+lPIB\_No\_Man = \beta_0+\beta_1lPIBMan+\epsilon_i 
+$$
+
+El primer paso es realizar las pruebas de raices unitarias a las series.
+
+```{r}
+aTSA::adf.test(lPIB)
+aTSA::adf.test(lPIBMan)
+aTSA::adf.test(lPIB_No_Man)
+```
+
+Las series presentan raices unitarias en niveles por lo que procedemos a estimar las primeras diferencias y realizar nuevamente la prueba ADF.
+
+```{r}
+d1_lPIB <- diff(lPIB, lag = 4, differences = 1)
+d1_lPIBMan <- diff(lPIBMan, lag = 4, differences = 1)
+d1_lPIB_NMan <- diff(lPIB_No_Man, lag = 4, differences = 1)
+
+aTSA::adf.test(d1_lPIB)
+aTSA::adf.test(d1_lPIBMan)
+aTSA::adf.test(d1_lPIB_NMan)
+```
+
+Las series son estacionarias en sus primeras diferencias, es decir, son I(1). Estimamos el modelo:
+
+```{r}
+m1 <- lm(d1_lPIB_NMan ~ d1_lPIBMan)
+summary(m1)
+errores_m1 <- residuals(m1)
+aTSA::adf.test(errores_m1)
+```
+
+Obtenemos que el coeficiente de la variable explicativa es significativo y que está acorde a la teoría económica. Además, los residuales son I(0) por lo que podemos indicar que existe cointegración entre las dos variables, existe relación de largo plazo.
+
+Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error. Se realiza sobre las diferencias de las series y se añaden los residuales de la regresión anterior rezagados.
+
+```{r}
+lag_errores_m1 <- lag(errores_m1, n = 4L)
+lag_errores_m1 <- na.omit(lag_errores_m1)
+d2_lPIBMan <- diff(lPIBMan, lag = 4, differences = 2)
+d2_lPIB_NMan <- diff(lPIB_No_Man, lag = 4, differences = 2)
+mce_1 <- lm(d2_lPIB_NMan ~ d2_lPIBMan + lag_errores_m1, na.action = "na.omit")
+summary(mce_1)
+```
+
+Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo.
 
