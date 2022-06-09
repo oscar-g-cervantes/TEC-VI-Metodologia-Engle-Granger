@@ -252,7 +252,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Metodología de Engle-Granger</h1>
 <h4 class="author">Oscar García Cervantes - Taller de economía cuantitativa VI</h4>
-<h4 class="date">viernes 03 de junio, 2022</h4>
+<h4 class="date">miércoles 08 de junio, 2022</h4>
 
 </div>
 
@@ -263,7 +263,8 @@ div.tocify {
 library(readxl)
 library(tidyverse)
 library(ggfortify)
-library(aTSA)</code></pre>
+library(aTSA)
+library(dyn)</code></pre>
 </div>
 <div id="datos" class="section level1">
 <h1>2. Datos</h1>
@@ -535,33 +536,71 @@ aTSA::adf.test(errores_m1)</code></pre>
 ## ---- 
 ## Note: in fact, p.value = 0.01 means p.value &lt;= 0.01</code></pre>
 <p>Obtenemos que el coeficiente de la variable explicativa es significativo y que está acorde a la teoría económica. Además, los residuales son I(0) por lo que podemos indicar que existe cointegración entre las dos variables, existe relación de largo plazo.</p>
-<p>Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error. Se realiza sobre las diferencias de las series y se añaden los residuales de la regresión anterior rezagados.</p>
-<pre class="r"><code>lag_errores_m1 &lt;- lag(errores_m1, n = 4L)
-lag_errores_m1 &lt;- na.omit(lag_errores_m1)
-d2_lPIBMan &lt;- diff(lPIBMan, lag = 4, differences = 2)
-d2_lPIB_NMan &lt;- diff(lPIB_No_Man, lag = 4, differences = 2)
-mce_1 &lt;- lm(d2_lPIB_NMan ~ d2_lPIBMan + lag_errores_m1, na.action = &quot;na.omit&quot;)
-summary(mce_1)</code></pre>
+<p>Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error. Se realiza sobre las diferencias de las series y se añaden los residuales de la regresión anterior rezagados. Para poder utilizar rezagos en la regresión se utiliza la paquetería <code>dyn</code>.</p>
+<pre class="r"><code># Primero unimos las series en un dataframe
+Base_mce &lt;- cbind(d1_lPIB_NMan, d1_lPIBMan, errores_m1)
+Base_mce &lt;- as.data.frame(Base_mce)
+
+
+# Estimamos el modelo agregando el mecanismo de corrección de error y utilizando la Metodología de Hendry agregamos la variable explicada y la explicativa con rezagos.
+modelo_mce &lt;- dyn$lm(d1_lPIB_NMan ~ 
+                       lag(d1_lPIB_NMan,2) + lag(d1_lPIB_NMan,1) +
+                       lag(d1_lPIBMan,2) + lag(d1_lPIBMan,1) +
+                       lag(errores_m1,1) + 0, data = Base_mce)
+
+summary(modelo_mce)</code></pre>
 <pre><code>## 
 ## Call:
-## lm(formula = d2_lPIB_NMan ~ d2_lPIBMan + lag_errores_m1, na.action = &quot;na.omit&quot;)
+## lm(formula = dyn(d1_lPIB_NMan ~ lag(d1_lPIB_NMan, 2) + lag(d1_lPIB_NMan, 
+##     1) + lag(d1_lPIBMan, 2) + lag(d1_lPIBMan, 1) + lag(errores_m1, 
+##     1) + 0), data = Base_mce)
 ## 
 ## Residuals:
 ##       Min        1Q    Median        3Q       Max 
-## -0.064911 -0.005396  0.003563  0.010743  0.026635 
+## -0.183749 -0.006207  0.002380  0.011250  0.156249 
 ## 
 ## Coefficients:
-##                  Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)    -0.0007458  0.0017034  -0.438    0.662    
-## d2_lPIBMan      0.5300708  0.0175177  30.259   &lt;2e-16 ***
-## lag_errores_m1 -1.0466526  0.0961044 -10.891   &lt;2e-16 ***
+##                      Estimate Std. Error t value Pr(&gt;|t|)    
+## lag(d1_lPIB_NMan, 2)  -0.4178     0.2210  -1.890  0.06145 .  
+## lag(d1_lPIB_NMan, 1)   1.8291     0.4129   4.430  2.3e-05 ***
+## lag(d1_lPIBMan, 2)     0.1910     0.1218   1.569  0.11968    
+## lag(d1_lPIBMan, 1)    -0.6287     0.2365  -2.658  0.00907 ** 
+## lag(errores_m1, 1)    -0.9666     0.3746  -2.581  0.01123 *  
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.01777 on 106 degrees of freedom
-## Multiple R-squared:  0.9168, Adjusted R-squared:  0.9152 
-## F-statistic: 583.8 on 2 and 106 DF,  p-value: &lt; 2.2e-16</code></pre>
-<p>Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo.</p>
+## Residual standard error: 0.0307 on 106 degrees of freedom
+##   (2 observations deleted due to missingness)
+## Multiple R-squared:  0.5381, Adjusted R-squared:  0.5164 
+## F-statistic:  24.7 on 5 and 106 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo. También observamos que hay variables que no son estadísticamente significativas por lo que, de acuerdo con la Metodología de Hendry, procedemos a estimar el modelo sin esas variables.</p>
+<pre class="r"><code>modelo_mce2 &lt;- dyn$lm(d1_lPIB_NMan ~ 
+                       lag(d1_lPIB_NMan,1) +
+                       lag(d1_lPIBMan,1) +
+                       lag(errores_m1,1) + 0, data = Base_mce)
+summary(modelo_mce2)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = dyn(d1_lPIB_NMan ~ lag(d1_lPIB_NMan, 1) + lag(d1_lPIBMan, 
+##     1) + lag(errores_m1, 1) + 0), data = Base_mce)
+## 
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.183815 -0.006379  0.002315  0.009215  0.168254 
+## 
+## Coefficients:
+##                      Estimate Std. Error t value Pr(&gt;|t|)    
+## lag(d1_lPIB_NMan, 1)   1.3751     0.3264   4.213 5.22e-05 ***
+## lag(d1_lPIBMan, 1)    -0.3965     0.1969  -2.014   0.0465 *  
+## lag(errores_m1, 1)    -0.7990     0.3662  -2.182   0.0313 *  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.03088 on 109 degrees of freedom
+##   (1 observation deleted due to missingness)
+## Multiple R-squared:  0.5265, Adjusted R-squared:  0.5135 
+## F-statistic: 40.41 on 3 and 109 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>El siguiente paso es estimar las pruebas de normalidad, homocedasticidad, multicolinealidad, cambio estructural y autocorrelación como se realizó con el MCRL estimado mediante MCO.</p>
 </div>
 
 

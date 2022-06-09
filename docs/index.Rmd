@@ -27,6 +27,7 @@ library(readxl)
 library(tidyverse)
 library(ggfortify)
 library(aTSA)
+library(dyn)
 ```
 
 # 2. Datos
@@ -118,17 +119,32 @@ aTSA::adf.test(errores_m1)
 
 Obtenemos que el coeficiente de la variable explicativa es significativo y que está acorde a la teoría económica. Además, los residuales son I(0) por lo que podemos indicar que existe cointegración entre las dos variables, existe relación de largo plazo.
 
-Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error. Se realiza sobre las diferencias de las series y se añaden los residuales de la regresión anterior rezagados.
+Procedemos a estimar nuevamente el modelo agregando el mecanismo de corrección de error. Se realiza sobre las diferencias de las series y se añaden los residuales de la regresión anterior rezagados. Para poder utilizar rezagos en la regresión se utiliza la paquetería `dyn`.
 
 ```{r}
-lag_errores_m1 <- lag(errores_m1, n = 4L)
-lag_errores_m1 <- na.omit(lag_errores_m1)
-d2_lPIBMan <- diff(lPIBMan, lag = 4, differences = 2)
-d2_lPIB_NMan <- diff(lPIB_No_Man, lag = 4, differences = 2)
-mce_1 <- lm(d2_lPIB_NMan ~ d2_lPIBMan + lag_errores_m1, na.action = "na.omit")
-summary(mce_1)
+# Primero unimos las series en un dataframe
+Base_mce <- cbind(d1_lPIB_NMan, d1_lPIBMan, errores_m1)
+Base_mce <- as.data.frame(Base_mce)
+
+
+# Estimamos el modelo agregando el mecanismo de corrección de error y utilizando la Metodología de Hendry agregamos la variable explicada y la explicativa con rezagos.
+modelo_mce <- dyn$lm(d1_lPIB_NMan ~ 
+                       lag(d1_lPIB_NMan,2) + lag(d1_lPIB_NMan,1) +
+                       lag(d1_lPIBMan,2) + lag(d1_lPIBMan,1) +
+                       lag(errores_m1,1) + 0, data = Base_mce)
+
+summary(modelo_mce)
+
 ```
 
-Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo.
+Comprobamos que el mecanismo de corrección de error es negativo y estadísticamente significativo. También observamos que hay variables que no son estadísticamente significativas por lo que, de acuerdo con la Metodología de Hendry, procedemos a estimar el modelo sin esas variables.
 
+```{r}
+modelo_mce2 <- dyn$lm(d1_lPIB_NMan ~ 
+                       lag(d1_lPIB_NMan,1) +
+                       lag(d1_lPIBMan,1) +
+                       lag(errores_m1,1) + 0, data = Base_mce)
+summary(modelo_mce2)
+```
 
+El siguiente paso es estimar las pruebas de normalidad, homocedasticidad, multicolinealidad, cambio estructural y autocorrelación como se realizó con el MCRL estimado mediante MCO.
