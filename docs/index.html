@@ -264,7 +264,10 @@ library(readxl)
 library(tidyverse)
 library(ggfortify)
 library(aTSA)
-library(dyn)</code></pre>
+library(dyn)
+library(lmtest)
+library(car)
+library(strucchange)</code></pre>
 </div>
 <div id="datos" class="section level1">
 <h1>2. Datos</h1>
@@ -600,7 +603,41 @@ summary(modelo_mce2)</code></pre>
 ##   (1 observation deleted due to missingness)
 ## Multiple R-squared:  0.5265, Adjusted R-squared:  0.5135 
 ## F-statistic: 40.41 on 3 and 109 DF,  p-value: &lt; 2.2e-16</code></pre>
-<p>El siguiente paso es estimar las pruebas de normalidad, homocedasticidad, multicolinealidad, cambio estructural y autocorrelación como se realizó con el MCRL estimado mediante MCO.</p>
+<p>El siguiente paso es estimar las pruebas de normalidad, homocedasticidad, multicolinealidad, cambio estructural y autocorrelación como se realizó con la estimación mediante MCO.</p>
+<pre class="r"><code># Normalidad
+jarque.bera.test(modelo_mce2$residuals)</code></pre>
+<pre><code>## 
+##  Jarque Bera Test
+## 
+## data:  modelo_mce2$residuals
+## X-squared = 1587, df = 2, p-value &lt; 2.2e-16</code></pre>
+<pre class="r"><code># Homocedasticidad
+bptest(modelo_mce2)</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  modelo_mce2
+## BP = 8.5988, df = 2, p-value = 0.01358</code></pre>
+<pre class="r"><code># Multicolinealidad
+vif(modelo_mce2)</code></pre>
+<pre><code>## Warning in vif.default(modelo_mce2): No intercept: vifs may not be sensible.</code></pre>
+<pre><code>## lag(d1_lPIB_NMan, 1)   lag(d1_lPIBMan, 1)   lag(errores_m1, 1) 
+##            24.725949            20.560626             5.043095</code></pre>
+<pre class="r"><code># Cambio estructural
+sctest(modelo_mce2)</code></pre>
+<pre><code>## 
+##  M-fluctuation test
+## 
+## data:  modelo_mce2
+## f(efp) = 1.3577, p-value = 0.1429</code></pre>
+<pre class="r"><code># Autocorrelación
+dwtest(modelo_mce2)</code></pre>
+<pre><code>## 
+##  Durbin-Watson test
+## 
+## data:  modelo_mce2
+## DW = 1.8794, p-value = 0.2233
+## alternative hypothesis: true autocorrelation is greater than 0</code></pre>
 </div>
 
 

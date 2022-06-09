@@ -28,6 +28,9 @@ library(tidyverse)
 library(ggfortify)
 library(aTSA)
 library(dyn)
+library(lmtest)
+library(car)
+library(strucchange)
 ```
 
 # 2. Datos
@@ -147,4 +150,22 @@ modelo_mce2 <- dyn$lm(d1_lPIB_NMan ~
 summary(modelo_mce2)
 ```
 
-El siguiente paso es estimar las pruebas de normalidad, homocedasticidad, multicolinealidad, cambio estructural y autocorrelación como se realizó con el MCRL estimado mediante MCO.
+El siguiente paso es estimar las pruebas de normalidad, homocedasticidad, multicolinealidad, cambio estructural y autocorrelación como se realizó con la estimación mediante MCO.
+
+```{r}
+# Normalidad
+jarque.bera.test(modelo_mce2$residuals)
+
+# Homocedasticidad
+bptest(modelo_mce2)
+
+# Multicolinealidad
+vif(modelo_mce2)
+
+# Cambio estructural
+sctest(modelo_mce2)
+
+# Autocorrelación
+dwtest(modelo_mce2)
+```
+
